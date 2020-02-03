@@ -1,4 +1,4 @@
-{:deps {}
+{:deps {org.apache.maven/maven-settings {:mvn/version "3.6.3"}}
  :aliases {:repl {:extra-deps {nrepl {:mvn/version "0.6.0"}
                                cider/cider-nrepl {:mvn/version "0.23.0-SNAPSHOT"}
                                cider/piggieback {:mvn/version "0.4.2"}
