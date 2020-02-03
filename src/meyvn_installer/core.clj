@@ -1,14 +1,11 @@
 (ns meyvn-installer.core
   (:gen-class)
   (:require [clojure.string :as str :refer [trim-newline]]
-            [meyvn-installer.utils :refer [exit find-file]]
-            [clojure.java.io :as io])
-  (:import [java.nio.file Path LinkOption]
-           [org.apache.maven.settings Settings Server SettingsUtils]
-           [org.apache.maven.settings.io DefaultSettingsWriter DefaultSettingsReader]))
-
-;; add username and password to settings.xml
-;; Check if maven is installed
+            [meyvn-installer.utils :as utils :refer [exit find-file]]
+            [meyvn-installer.settings :refer [write-settings]]
+            [clojure.java.io :as io]
+            [clojure.java.browse :refer [browse-url]])
+  (:import [java.nio.file Path LinkOption]))
 
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
@@ -34,29 +31,6 @@
         candidates #{(str homedir "/.local/bin") (str homedir "/bin") "/usr/local/bin"}]
     (some candidates path)))
 
-(defn new-settings [credentials]
-  (let [settings (Settings.)]
-    (let [server (doto (Server.)
-                   (.setId "meyvn")
-                   (.setUsername (:user credentials))
-                   (.setPassword (:pass credentials)))]
-      (doto settings        (.addServer server)))
-    settings))
-
-(def user-settings (str (System/getProperty "user.home") "/.m2/settings.xml"))
-
-(defn write-settings [credentials]
-  (let [f (str (System/getProperty "java.io.tmpdir") "/settings.xml")]
-    (if-let [settings-xml (find-file user-settings)]
-      (let [user-settings (.read (DefaultSettingsReader.) settings-xml nil)]
-        (SettingsUtils/merge user-settings (new-settings credentials) "user-level")
-        (with-open [out (io/output-stream f)]
-          (.write (DefaultSettingsWriter.) out nil user-settings))
-        (io/file f))
-      (with-open [out (io/output-stream f)]
-        (.write (DefaultSettingsWriter.) out nil (new-settings))))
-    f))
-
 (defn download [credentials]
   (let [settings (write-settings credentials)
         pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" "-Dartifact=org.danielsz:meyvn:1.3.4"])
@@ -72,8 +46,14 @@
         sh (io/file (str path "/myvn"))]
     (if (find-file meyvn)
       (println "Found meyvn jar.")
-      (let [credentials {:user "danielsz"
-                         :pass "rF2eg1gngXcFv9vzmf6hlFucL"}]
-        (download credentials)))
-    (.setExecutable sh true)
-    (spit sh (str "M2_HOME=" home " java -jar " meyvn " $@"))))
+      (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
+    (let [username (.readLine (System/console) "Username: " (into-array Object []))
+          password (utils/pwd-prompt)]
+      (download {:user username :pass password})
+      (.setExecutable sh true)
+      (spit sh (str "M2_HOME=" home " java -jar " meyvn " $@"))
+      (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
+    (if (utils/confirm "Would you like to apply for a licence?")
+      (do (browse-url "https://meyvn.org")
+          (exit "Thank you!"))
+      (exit "Bye for now."))))))

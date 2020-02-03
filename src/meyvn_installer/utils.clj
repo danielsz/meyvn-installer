@@ -11,13 +11,13 @@
   (println msg)
   (System/exit status))
 
-(defn prompt []
+(defn pwd-prompt []
   (let [console (System/console)
-        password (.readPassword console "Please enter your password: " nil)]
+        password (.readPassword console "Password: " nil)]
     (str/join password)))
 
-(defn confirm [title message]
-  (let [_ (println (str message " " title " (Please type Yes or No)"))
+(defn confirm [message]
+  (let [_ (println (str message "\nPlease type (Y)es or (N)o:"))
         option (read-line)]
-    (when (not= (.startsWith (str/lower-case option) "y"))
-      (throw (Exception. "User did not confirm")))))
+    (.startsWith (str/lower-case option) "y")))
+
