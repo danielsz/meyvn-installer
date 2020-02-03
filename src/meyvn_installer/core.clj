@@ -7,7 +7,7 @@
             [clojure.java.browse :refer [browse-url]])
   (:import [java.nio.file Path LinkOption]))
 
-(def version "1.3.5")
+(def version "1.3.6")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
 
 (defn maven-path []
