@@ -72,5 +72,12 @@
       (exit "There was a problem downloading meyvn." :status 1))))
 
 (defn -main [& args]
-  (maven-path)
-  (download))
+  (let [home (maven-home)
+        path (bin-path)
+        meyvn (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.4/meyvn-1.3.4.jar")
+        sh (io/file (str path "/myvn"))]
+    (if (find-file meyvn)
+      (println "Found meyvn jar.")
+      (download))
+    (.setExecutable sh true)
+    (spit sh (str "M2_HOME=" home " java -jar " meyvn " $@"))))
