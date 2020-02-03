@@ -7,7 +7,7 @@
             [clojure.java.browse :refer [browse-url]])
   (:import [java.nio.file Path LinkOption]))
 
-(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.4/meyvn-1.3.4.jar"))
+(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.5/meyvn-1.3.5.jar"))
 
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
@@ -51,6 +51,7 @@
       (let [username (.readLine (System/console) "Username: " (into-array Object []))
             password (utils/pwd-prompt)]
         (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
+        (println "Downloading. Please wait...")
         (download {:user username :pass password})
         (.setExecutable sh true)
         (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
