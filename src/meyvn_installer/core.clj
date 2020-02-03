@@ -44,8 +44,7 @@
 
 (defn -main [& args]
   (let [home (maven-home)
-        path (bin-path)
-        sh (io/file (str path "/myvn"))]
+        sh (io/file (str (bin-path) "/myvn"))]
     (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
     (when (find-file release) (exit "Meyvn seems to be already installed."))
     (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
@@ -54,8 +53,8 @@
         (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
         (println "Downloading. Please wait...")
         (download {:user username :pass password})
-        (.setExecutable sh true)
         (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
+        (.setExecutable sh true)
         (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
       (if (utils/confirm "Would you like to apply for a licence?")
         (do (browse-url "https://meyvn.org")
