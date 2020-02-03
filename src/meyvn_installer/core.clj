@@ -5,7 +5,8 @@
             [meyvn-installer.settings :refer [write-settings]]
             [clojure.java.io :as io]
             [clojure.java.browse :refer [browse-url]])
-  (:import [java.nio.file Paths LinkOption]))
+  (:import [java.nio.file Paths LinkOption]
+           [java.io FileNotFoundException]))
 
 (def version "1.3.6")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
@@ -44,15 +45,19 @@
   (let [home (maven-home)
         sh (io/file (str (bin-path) "/myvn"))]
     (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
-    (when (find-file release) (exit "Meyvn seems to be already installed."))
     (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
       (let [username (.readLine (System/console) "Username: " (into-array Object []))
             password (utils/pwd-prompt)]
         (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
-        (println "Downloading. Please wait...")
-        (download {:user username :pass password})
-        (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
-        (.setExecutable sh true)
+        (if (find-file release)
+          (println "Meyvn jar is found.")
+          (download {:user username :pass password}))
+        (try
+          (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
+          (.setExecutable sh true)
+          (catch FileNotFoundException e
+            (println (.getMessage e))
+            (exit "It is recommend to have either ~/bin or ~/.local/bin in your path." :status 1)))
         (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
       (if (utils/confirm "Would you like to apply for a licence?")
         (do (browse-url "https://meyvn.org")
