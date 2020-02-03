@@ -24,5 +24,5 @@
           (.write (DefaultSettingsWriter.) out nil user-settings))
         (io/file f))
       (with-open [out (io/output-stream f)]
-        (.write (DefaultSettingsWriter.) out nil (new-settings))))
+        (.write (DefaultSettingsWriter.) out nil (new-settings credentials))))
     f))

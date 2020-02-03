@@ -17,7 +17,7 @@
     (str/join password)))
 
 (defn confirm [message]
-  (let [_ (println (str message "\nPlease type (Y)es or (N)o:"))
+  (let [_ (println (str message " Y(es) or N(o)?"))
         option (read-line)]
     (.startsWith (str/lower-case option) "y")))
 

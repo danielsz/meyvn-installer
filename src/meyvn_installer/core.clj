@@ -19,7 +19,7 @@
                     trim-newline
                     (Path/of (into-array String [])))]
         (.toRealPath path (into-array LinkOption [])))
-      (exit "Maven executable not found" :status 1))))
+      (exit "Maven executable not found. Please install Maven prior to Meyvn." :status 1))))
 
 (defn maven-home []
   (let [path (maven-path)
@@ -50,6 +50,7 @@
     (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
       (let [username (.readLine (System/console) "Username: " (into-array Object []))
             password (utils/pwd-prompt)]
+        (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
         (download {:user username :pass password})
         (.setExecutable sh true)
         (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
