@@ -1,6 +1,6 @@
 {:pom {:group-id "org.danielsz"
        :artifact-id "meyvn-installer"
-       :version "1.0.8"
+       :version "1.0.9"
        :name "meyvn-installer"}
  :packaging {:uberjar
              {:enabled false

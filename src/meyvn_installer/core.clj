@@ -35,7 +35,7 @@
 (defn download [credentials]
   (let [settings (write-settings credentials)
         pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
-        rc (.waitFor (-> pb .start))]
+        rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
       (println "Finished downloading")
       (exit "There was a problem downloading meyvn." :status 1))))
