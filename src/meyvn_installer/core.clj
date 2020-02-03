@@ -7,10 +7,8 @@
            [org.apache.maven.settings Settings Server SettingsUtils]
            [org.apache.maven.settings.io DefaultSettingsWriter DefaultSettingsReader]))
 
-
 ;; add username and password to settings.xml
 ;; Check if maven is installed
-
 
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
@@ -36,11 +34,7 @@
         candidates #{(str homedir "/.local/bin") (str homedir "/bin") "/usr/local/bin"}]
     (some candidates path)))
 
-
-(def credentials {:user "danielsz"
-                  :pass "rF2eg1gngXcFv9vzmf6hlFucL"})
-
-(defn new-settings []
+(defn new-settings [credentials]
   (let [settings (Settings.)]
     (let [server (doto (Server.)
                    (.setId "meyvn")
@@ -51,11 +45,11 @@
 
 (def user-settings (str (System/getProperty "user.home") "/.m2/settings.xml"))
 
-(defn write-settings []
+(defn write-settings [credentials]
   (let [f (str (System/getProperty "java.io.tmpdir") "/settings.xml")]
     (if-let [settings-xml (find-file user-settings)]
       (let [user-settings (.read (DefaultSettingsReader.) settings-xml nil)]
-        (SettingsUtils/merge user-settings (new-settings) "user-level")
+        (SettingsUtils/merge user-settings (new-settings credentials) "user-level")
         (with-open [out (io/output-stream f)]
           (.write (DefaultSettingsWriter.) out nil user-settings))
         (io/file f))
@@ -63,8 +57,8 @@
         (.write (DefaultSettingsWriter.) out nil (new-settings))))
     f))
 
-(defn download []
-  (let [settings (write-settings)
+(defn download [credentials]
+  (let [settings (write-settings credentials)
         pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" "-Dartifact=org.danielsz:meyvn:1.3.4"])
         rc (.waitFor (-> pb .start))]
     (if (zero? rc)
@@ -78,6 +72,8 @@
         sh (io/file (str path "/myvn"))]
     (if (find-file meyvn)
       (println "Found meyvn jar.")
-      (download))
+      (let [credentials {:user "danielsz"
+                         :pass "rF2eg1gngXcFv9vzmf6hlFucL"}]
+        (download credentials)))
     (.setExecutable sh true)
     (spit sh (str "M2_HOME=" home " java -jar " meyvn " $@"))))

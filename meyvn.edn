@@ -3,7 +3,7 @@
        :version "1.0.0"
        :name "meyvn-installer"}
  :packaging {:uberjar
-             {:enabled true
+             {:enabled false
               :build-properties {:main-class "meyvn-installer.core"}
               :excludes {:artifacts ["org.clojure:google-closure-library" "com.google.javascript:closure-compiler"]
                          :filters ["META-INF/*.SF" "META-INF/*.DSA" "META-INF/*.RSA"]}
@@ -12,7 +12,7 @@
               :graalvm {:enabled false
                         :with-https false
                         :bin-name ""}}
-             :jar {:enabled false
+             :jar {:enabled true
                    :remote-repository {:id "clojars"
                                        :url "https://clojars.org/repo"}}}
  :interactive {:enabled true
