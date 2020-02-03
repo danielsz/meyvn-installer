@@ -5,7 +5,7 @@
             [meyvn-installer.settings :refer [write-settings]]
             [clojure.java.io :as io]
             [clojure.java.browse :refer [browse-url]])
-  (:import [java.nio.file Path LinkOption]))
+  (:import [java.nio.file Paths LinkOption]))
 
 (def version "1.3.6")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
@@ -18,14 +18,12 @@
       (let [path (-> (.getInputStream process)
                     slurp
                     trim-newline
-                    (Path/of (into-array String [])))]
+                    (Paths/get (into-array String [])))]
         (.toRealPath path (into-array LinkOption [])))
       (exit "Maven executable not found. Please install Maven prior to Meyvn." :status 1))))
 
 (defn maven-home []
-  (let [path (maven-path)
-        length (.getNameCount path)]
-    (.subpath path 0 (- length 2))))
+  (-> (maven-path) .getParent .getParent))
 
 (defn bin-path []
   (let [path (-> (System/getenv "PATH")
