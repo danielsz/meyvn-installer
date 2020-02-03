@@ -7,7 +7,8 @@
             [clojure.java.browse :refer [browse-url]])
   (:import [java.nio.file Path LinkOption]))
 
-(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.5/meyvn-1.3.5.jar"))
+(def version "1.3.5")
+(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
 
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
@@ -35,7 +36,7 @@
 
 (defn download [credentials]
   (let [settings (write-settings credentials)
-        pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" "-Dartifact=org.danielsz:meyvn:1.3.4"])
+        pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
         rc (.waitFor (-> pb .start))]
     (if (zero? rc)
       (println "Finished downloading")
