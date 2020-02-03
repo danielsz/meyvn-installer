@@ -7,6 +7,8 @@
             [clojure.java.browse :refer [browse-url]])
   (:import [java.nio.file Path LinkOption]))
 
+(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.4/meyvn-1.3.4.jar"))
+
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
         process (.start pb)
@@ -42,18 +44,17 @@
 (defn -main [& args]
   (let [home (maven-home)
         path (bin-path)
-        meyvn (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/1.3.4/meyvn-1.3.4.jar")
         sh (io/file (str path "/myvn"))]
-    (if (find-file meyvn)
-      (println "Found meyvn jar.")
-      (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
-    (let [username (.readLine (System/console) "Username: " (into-array Object []))
-          password (utils/pwd-prompt)]
-      (download {:user username :pass password})
-      (.setExecutable sh true)
-      (spit sh (str "M2_HOME=" home " java -jar " meyvn " $@"))
-      (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
-    (if (utils/confirm "Would you like to apply for a licence?")
-      (do (browse-url "https://meyvn.org")
-          (exit "Thank you!"))
-      (exit "Bye for now."))))))
+    (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
+    (when (find-file release) (exit "Meyvn seems to be already installed."))
+    (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
+      (let [username (.readLine (System/console) "Username: " (into-array Object []))
+            password (utils/pwd-prompt)]
+        (download {:user username :pass password})
+        (.setExecutable sh true)
+        (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
+        (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
+      (if (utils/confirm "Would you like to apply for a licence?")
+        (do (browse-url "https://meyvn.org")
+            (exit "Thank you!"))
+        (exit "Bye for now.")))))
