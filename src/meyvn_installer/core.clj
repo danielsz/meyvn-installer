@@ -45,21 +45,21 @@
   (let [home (maven-home)
         sh (io/file (str (bin-path) "/myvn"))]
     (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
-    (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
-      (let [username (.readLine (System/console) "Username: " (into-array Object []))
-            password (utils/pwd-prompt)]
-        (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
-        (if (find-file release)
-          (println "Meyvn jar is found.")
+    (if (find-file release)
+      (println "Meyvn jar is found.")
+      (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
+        (let [username (.readLine (System/console) "Username: " (into-array Object []))
+              password (utils/pwd-prompt)]
+          (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
           (download {:user username :pass password}))
-        (try
-          (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
-          (.setExecutable sh true)
-          (catch FileNotFoundException e
-            (println (.getMessage e))
-            (exit "It is recommend to have either ~/bin or ~/.local/bin in your path." :status 1)))
-        (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed."))
-      (if (utils/confirm "Would you like to apply for a licence?")
-        (do (browse-url "https://meyvn.org")
-            (exit "Thank you!"))
-        (exit "Bye for now.")))))
+        (if (utils/confirm "Would you like to apply for a licence?")
+          (do (browse-url "https://meyvn.org")
+              (exit "Thank you!"))
+          (exit "Bye for now."))))
+    (try
+      (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
+      (.setExecutable sh true)
+      (catch FileNotFoundException e
+        (println (.getMessage e))
+        (exit "Please consider having ~/bin or ~/.local/bin in your path rather than sudo'ing." :status 1)))
+    (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed.")))
