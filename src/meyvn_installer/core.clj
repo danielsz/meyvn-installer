@@ -4,7 +4,8 @@
             [meyvn-installer.utils :as utils :refer [exit find-file]]
             [meyvn-installer.settings :refer [write-settings]]
             [clojure.java.io :as io]
-            [clojure.java.browse :refer [browse-url]])
+            [clojure.java.browse :refer [browse-url]]
+            [clojure.tools.cli :refer [parse-opts]])
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
@@ -41,21 +42,47 @@
       (println "Finished downloading")
       (exit "There was a problem downloading meyvn." :status 1))))
 
+(def cli-options
+ [["-u" "--username USERNAME" "The username that came with your license."]
+  ["-p" "--password PASSWORD" "The password that came wiht your license."]
+  ["-v" nil "Verbosity level, use as a flag (no arguments)" :id :verbose :default 0 :update-fn inc]
+  ["-h" "--help" "This help screen."]])
+
+(defn prompt-for-credentials []
+  (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
+  (let [username (.readLine (System/console) "Username: " (into-array Object []))
+        password (utils/pwd-prompt)]
+    (when (or (str/blank? username) (str/blank? password))
+      (exit "Username and password must be specified." :status 1))
+    [username password]))
+
+(defn usage [summary]
+  (->> ["This is the Meyvn installer."
+        ""
+        "Usage: clj -m meyvn-installer.core"
+        ""
+        summary
+        ""
+        ""]
+       (str/join "\n")))
+
 (defn -main [& args]
-  (let [home (maven-home)
+  (let [{:keys [options arguments errors summary]} (parse-opts args cli-options :in-order true)
+        home (maven-home)
         sh (io/file (str (bin-path) "/myvn"))]
-    (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
+    (when (:help options) (exit (usage summary)))
+    (when (pos? (:verbose options)) (println "options: " options "\narguments: " arguments "\nerrors: " errors))
     (if (find-file release)
       (println "Meyvn jar is found.")
-      (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
-        (let [username (.readLine (System/console) "Username: " (into-array Object []))
-              password (utils/pwd-prompt)]
-          (when (or (str/blank? username) (str/blank? password)) (exit "Username and password must be specified." :status 1))
-          (download {:user username :pass password}))
-        (if (utils/confirm "Would you like to apply for a licence?")
-          (do (browse-url "https://meyvn.org")
-              (exit "Thank you!"))
-          (exit "Bye for now."))))
+      (if (and (contains? options :username) (contains? options :password))
+        (download {:user (:username options) :pass (:password options)})
+        (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
+          (let [[username password] (prompt-for-credentials)]
+            (download {:user username :pass password}))
+          (if (utils/confirm "Would you like to apply for a licence?")
+            (do (browse-url "https://meyvn.org")
+                (exit "Thank you!"))
+            (exit "Bye for now.")))))
     (try
       (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
       (.setExecutable sh true)

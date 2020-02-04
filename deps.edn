@@ -1,4 +1,5 @@
-{:deps {org.apache.maven/maven-core {:mvn/version "3.6.3"}}
+{:deps {org.apache.maven/maven-core {:mvn/version "3.6.3"}
+        org.clojure/tools.cli {:mvn/version "0.4.2"}}
  :aliases {:repl {:extra-deps {nrepl {:mvn/version "0.6.0"}
                                cider/cider-nrepl {:mvn/version "0.23.0-SNAPSHOT"}
                                cider/piggieback {:mvn/version "0.4.2"}
