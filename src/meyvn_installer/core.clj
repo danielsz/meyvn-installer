@@ -9,7 +9,7 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.3.6")
+(def version "1.3.8")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
 
 (defn maven-path []
@@ -89,4 +89,4 @@
       (catch FileNotFoundException e
         (println (.getMessage e))
         (exit "Please consider having ~/bin or ~/.local/bin in your path rather than sudo'ing." :status 1)))
-    (println "The \"myvn\" binary is now in your path. Meyvn has been successfully installed.")))
+    (println (str "Meyvn has been successfully installed (" (str sh) ")." ))))
