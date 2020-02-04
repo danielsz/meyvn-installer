@@ -19,7 +19,7 @@
   (let [f user-settings]
     (if-let [settings-xml (find-file user-settings)]
       (let [settings (.read (DefaultSettingsReader.) settings-xml nil)]
-        (SettingsUtils/merge user-settings (new-settings credentials) "user-level")
+        (SettingsUtils/merge settings (new-settings credentials) "user-level")
         (with-open [out (io/output-stream f)]
           (.write (DefaultSettingsWriter.) out nil settings)))
       (with-open [out (io/output-stream f)]
