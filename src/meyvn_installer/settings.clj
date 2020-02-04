@@ -16,13 +16,11 @@
     settings))
 
 (defn write-settings [credentials]
-  (let [f (str (System/getProperty "java.io.tmpdir") "/settings.xml")]
+  (let [f user-settings]
     (if-let [settings-xml (find-file user-settings)]
-      (let [user-settings (.read (DefaultSettingsReader.) settings-xml nil)]
+      (let [settings (.read (DefaultSettingsReader.) settings-xml nil)]
         (SettingsUtils/merge user-settings (new-settings credentials) "user-level")
         (with-open [out (io/output-stream f)]
-          (.write (DefaultSettingsWriter.) out nil user-settings))
-        (io/file f))
+          (.write (DefaultSettingsWriter.) out nil settings)))
       (with-open [out (io/output-stream f)]
-        (.write (DefaultSettingsWriter.) out nil (new-settings credentials))))
-    f))
+        (.write (DefaultSettingsWriter.) out nil (new-settings credentials))))))

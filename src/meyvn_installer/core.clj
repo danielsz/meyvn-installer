@@ -9,7 +9,7 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.3.8")
+(def version "1.3.9")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
 
 (defn maven-path []
@@ -35,8 +35,8 @@
     (some candidates path)))
 
 (defn download [credentials]
-  (let [settings (write-settings credentials)
-        pb (ProcessBuilder. ["mvn" "-s" settings "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
+  (write-settings credentials)
+  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
         rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
       (println "Finished downloading")
