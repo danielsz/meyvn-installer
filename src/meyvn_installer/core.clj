@@ -2,7 +2,7 @@
   (:gen-class)
   (:require [clojure.string :as str :refer [trim-newline]]
             [meyvn-installer.utils :as utils :refer [exit find-file]]
-            [meyvn-installer.settings :refer [write-settings]]
+            [meyvn-installer.settings :refer [write-settings credentials-mismatch?]]
             [clojure.java.io :as io]
             [clojure.java.browse :refer [browse-url]]
             [clojure.tools.cli :refer [parse-opts]])
@@ -35,7 +35,9 @@
     (some candidates path)))
 
 (defn download [credentials]
-  (write-settings credentials)
+  (if (credentials-mismatch? credentials)
+    (exit "A username/password combo for the meyvn repo exists, and it doesn't match. Please edit ~/.m2/settings.xml directly." :status 1 )
+    (write-settings credentials))
   (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
         rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
