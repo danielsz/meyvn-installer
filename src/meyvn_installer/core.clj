@@ -38,7 +38,7 @@
   (if (credentials-mismatch? credentials)
     (exit "A username/password combo for the meyvn repo exists, and it doesn't match. Please edit ~/.m2/settings.xml directly." :status 1 )
     (write-settings credentials))
-  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:2.10:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
+  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
         rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
       (println "Finished downloading")
