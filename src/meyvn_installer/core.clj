@@ -2,15 +2,13 @@
   (:gen-class)
   (:require [clojure.string :as str :refer [trim-newline]]
             [meyvn-installer.utils :as utils :refer [exit find-file]]
-            [meyvn-installer.settings :refer [write-settings credentials-mismatch?]]
             [clojure.java.io :as io]
-            [clojure.java.browse :refer [browse-url]]
             [clojure.tools.cli :refer [parse-opts]])
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.5.7")
-(def release (str (System/getProperty "user.home") "/.m2/repository/org/danielsz/meyvn/" version "/meyvn-" version ".jar"))
+(def version "1.5.9")
+(def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
 
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
@@ -31,14 +29,12 @@
   (let [path (-> (System/getenv "PATH")
                 (str/split #":"))
         homedir (System/getProperty "user.home")
-        candidates #{(str homedir "/.local/bin") (str homedir "/bin") "/usr/local/bin"}]
-    (some candidates path)))
+        candidates #{(str homedir "/.local/bin") (str homedir "/bin") "/usr/local/bin"}
+        exists #(.isDirectory (io/file %))]
+    (first (filter (every-pred candidates exists) path))))
 
-(defn download [credentials]
-  (if (credentials-mismatch? credentials)
-    (exit "A username/password combo for the meyvn repo exists, and it doesn't match. Please edit ~/.m2/settings.xml directly." :status 1 )
-    (write-settings credentials))
-  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get" "-DremoteRepositories=meyvn::::https://nexus.tuppu.net/repository/meyvn/" (str "-Dartifact=org.danielsz:meyvn:" version)])
+(defn download []
+  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get" (str "-Dartifact=org.meyvn:meyvn:" version)])
         rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
       (println "Finished downloading")
@@ -50,13 +46,6 @@
   ["-v" nil "Verbosity level, use as a flag (no arguments)" :id :verbose :default 0 :update-fn inc]
   ["-h" "--help" "This help screen."]])
 
-(defn prompt-for-credentials []
-  (when (nil? (System/console)) (exit "Please run this program in your terminal. Thank you!"))
-  (let [username (.readLine (System/console) "Username: " (into-array Object []))
-        password (utils/pwd-prompt)]
-    (when (or (str/blank? username) (str/blank? password))
-      (exit "Username and password must be specified." :status 1))
-    [username password]))
 
 (defn usage [summary]
   (->> ["This is the Meyvn installer."
@@ -75,16 +64,8 @@
     (when (:help options) (exit (usage summary)))
     (when (pos? (:verbose options)) (println "options: " options "\narguments: " arguments "\nerrors: " errors))
     (if (find-file release)
-      (println "Meyvn jar is found.")
-      (if (and (contains? options :username) (contains? options :password))
-        (download {:user (:username options) :pass (:password options)})
-        (if (utils/confirm "You will need the username/password that came with your licence. Are you ready to proceed?")
-          (let [[username password] (prompt-for-credentials)]
-            (download {:user username :pass password}))
-          (if (utils/confirm "Would you like to apply for a licence?")
-            (do (browse-url "https://meyvn.org")
-                (exit "Thank you!"))
-            (exit "Bye for now.")))))
+      (println "Existing Meyvn jar found.")
+      (download))
     (try
       (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
       (.setExecutable sh true)
