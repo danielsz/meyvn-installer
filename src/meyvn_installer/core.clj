@@ -10,6 +10,7 @@
 (def version "1.6.3")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
 
+
 (defn maven-path []
   (let [pb (ProcessBuilder. ["which" "mvn"])
         process (.start pb)
@@ -57,19 +58,40 @@
         ""]
        (str/join "\n")))
 
+(defn sudo-write [path]
+  (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp " (System/getProperty "java.io.tmpdir") "/myvn " path " 2>&1")]
+        pb (ProcessBuilder. cmd)
+        process (.start pb)
+        buffer (char-array 1024)
+        prompt-password (fn [s] (.readPassword (System/console) "%s" (into-array Object [s])))]
+    (with-open [out (clojure.java.io/reader (.getInputStream process))
+                in (clojure.java.io/writer (.getOutputStream process))]
+      (loop []
+        (let [size (.read out buffer 0 1024)]
+          (when (clojure.string/includes? (clojure.string/join buffer) "[sudo] password")
+            (when-let [password (prompt-password (String/valueOf buffer 0 size))]
+              (.write in password 0 (count password))
+              (.newLine in)
+              (.flush in)))
+          (when (not (neg? size))
+            (recur)))))))
+
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options :in-order true)
         home (maven-home)
-        sh (io/file (str (bin-path) "/myvn"))]
+        sh (io/file (str (bin-path) "/myvn"))
+        launcher (str "M2_HOME=" home " java -jar " release " $@")]
     (when (:help options) (exit (usage summary)))
     (when (pos? (:verbose options)) (println "options: " options "\narguments: " arguments "\nerrors: " errors))
     (if (find-file release)
       (println "Existing Meyvn jar found.")
       (download))
-    (try
-      (spit sh (str "M2_HOME=" home " java -jar " release " $@"))
-      (.setExecutable sh true)
-      (catch FileNotFoundException e
-        (println (.getMessage e))
-        (exit "Please consider having ~/bin or ~/.local/bin in your path rather than sudo'ing." :status 1)))
-    (println (str "Meyvn has been successfully installed (" (str sh) ")." ))))
+    (if (.canWrite sh)
+      (do
+        (spit sh launcher)
+        (.setExecutable sh true))
+      (let [sh (io/file (str (System/getProperty "java.io.tmpdir") "/myvn"))]
+        (spit sh launcher)
+        (.setExecutable sh true)
+        (sudo-write (bin-path))))
+    (println (str "`myvn' has been successfully installed in " (bin-path) "." ))))
