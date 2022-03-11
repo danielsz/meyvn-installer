@@ -59,22 +59,19 @@
        (str/join "\n")))
 
 (defn sudo-write [path]
-  (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp " (System/getProperty "java.io.tmpdir") "/myvn " path " 2>&1")]
+  (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp -p " (System/getProperty "java.io.tmpdir") "/myvn " path " 2>&1")]
         pb (ProcessBuilder. cmd)
         process (.start pb)
-        buffer (char-array 1024)
+        buffer (char-array 512)
         prompt-password (fn [s] (.readPassword (System/console) "%s" (into-array Object [s])))]
     (with-open [out (clojure.java.io/reader (.getInputStream process))
                 in (clojure.java.io/writer (.getOutputStream process))]
-      (loop []
-        (let [size (.read out buffer 0 1024)]
-          (when (clojure.string/includes? (clojure.string/join buffer) "[sudo] password")
-            (when-let [password (prompt-password (String/valueOf buffer 0 size))]
-              (.write in password 0 (count password))
-              (.newLine in)
-              (.flush in)))
-          (when (not (neg? size))
-            (recur)))))))
+      (let [size (.read out buffer 0 512)]
+        (when (clojure.string/includes? (clojure.string/join buffer) "[sudo] password")
+          (when-let [password (prompt-password (String/valueOf buffer 0 size))]
+            (.write in password 0 (count password))
+            (.newLine in)
+            (.flush in)))))))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options :in-order true)

@@ -22,9 +22,9 @@
                :repl-port :auto
                :repl-host "127.0.0.1"}
  :scm {:enabled true}
- :gpg {:enabled true}
+ :gpg {:enabled false}
  :sources {:enabled false}
- :stage {:enabled true
+ :stage {:enabled false
          :server-id "oss"
          :nexus-url "https://oss.sonatype.org/"}
  :distribution-management {:id "meyvn"
