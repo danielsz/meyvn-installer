@@ -1,6 +1,6 @@
 {:pom {:group-id "org.meyvn"
        :artifact-id "meyvn-installer"
-       :version "1.4.0"
+       :version "1.4.1"
         :name "Meyvn installer"
        :description "Installer for Meyvn (Clojure build tool)"
        :url "https://meyvn.org/"
@@ -22,9 +22,9 @@
                :repl-port :auto
                :repl-host "127.0.0.1"}
  :scm {:enabled true}
- :gpg {:enabled false}
- :sources {:enabled false}
- :stage {:enabled false
+ :gpg {:enabled true}
+ :sources {:enabled true}
+ :stage {:enabled true
          :server-id "oss"
          :nexus-url "https://oss.sonatype.org/"}
  :distribution-management {:id "meyvn"
