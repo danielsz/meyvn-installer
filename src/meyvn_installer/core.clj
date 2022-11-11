@@ -7,7 +7,7 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.6.4")
+(def version "1.6.6")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
 
 
@@ -77,7 +77,7 @@
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options :in-order true)
         home (maven-home)
         sh (io/file (str (bin-path) "/myvn"))
-        launcher (str "M2_HOME=" home " java -jar " release " $@")]
+        launcher (str "java -Dmaven.home=" home " -jar " release " $@")]
     (when (:help options) (exit (usage summary)))
     (when (pos? (:verbose options)) (println "options: " options "\narguments: " arguments "\nerrors: " errors))
     (if (find-file release)
