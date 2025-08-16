@@ -1,6 +1,6 @@
 {:pom {:group-id "org.meyvn"
        :artifact-id "meyvn-installer"
-       :version "1.5.7"
+       :version "1.5.8"
         :name "Meyvn installer"
        :description "Installer for Meyvn (Clojure build tool)"
        :url "https://meyvn.org/"
@@ -26,8 +26,12 @@
        :keyname "BA33576B24FF371BE0245E3ED2DD64F0A30E1DD6"
        :passphrase-server-id "gpg-default-signing-key"}
  :sources {:enabled true}
- :stage {:enabled true
+ :stage {:enabled false
          :server-id "oss"
          :nexus-url "https://oss.sonatype.org/"}
+ :maven-central-publishing {:enabled true
+                            :server-id "central"
+                            :auto-publish "true"
+                            :wait-until "published"}
  :distribution-management {:id "meyvn"
                            :url "https://nexus.tuppu.net/repository/meyvn/"}}
