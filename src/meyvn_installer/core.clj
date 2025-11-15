@@ -7,7 +7,7 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.8.4")
+(def version "1.8.5")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
 
 
