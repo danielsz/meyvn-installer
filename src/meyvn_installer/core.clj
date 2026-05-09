@@ -7,7 +7,7 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.8.5")
+(def version "1.8.6")
 (def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
 
 
@@ -30,9 +30,11 @@
   (let [path (-> (System/getenv "PATH")
                 (str/split #":"))
         homedir (System/getProperty "user.home")
-        candidates #{(str homedir "/.local/bin") (str homedir "/bin") "/usr/local/bin"}
-        exists #(.isDirectory (io/file %))]
-    (first (filter (every-pred candidates exists) path))))
+        candidates #{(str homedir "/.local/bin") "/usr/local/bin" (str homedir "/bin")}
+        exists #(.isDirectory (io/file %))
+        selected (first (filter (every-pred candidates exists) path))]
+    (println "Installation directory:" selected)
+    selected))
 
 (defn download []
   (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get" (str "-Dartifact=org.meyvn:meyvn:" version)])
