@@ -85,7 +85,8 @@
     (if (find-file release)
       (println "Existing Meyvn jar found.")
       (download))
-    (if (.canWrite sh)
+    (println "can write?" (.canWrite (.getParentFile sh)))
+    (if (.canWrite (.getParentFile sh))
       (do
         (spit sh launcher)
         (.setExecutable sh true))
