@@ -22,11 +22,13 @@
         process (.start pb)
         rc (.waitFor process)]
     (if (= rc 0)
-      (let [path (-> (.getInputStream process)
-                    slurp
-                    trim-newline
-                    (Paths/get (into-array String [])))]
-        (.toRealPath path (into-array LinkOption [])))
+       (let [path (-> (.getInputStream process)
+                     slurp
+                     str/split-lines  ; split on newlines
+                     first            ; take only the first match
+                     str/trim         ; clean any whitespace/CR
+                     (Paths/get (into-array String [])))]
+         (.toRealPath path (into-array LinkOption [])))
       (exit "Maven executable not found. Please install Maven prior to Meyvn." :status 1))))
 
 (defn maven-home []
