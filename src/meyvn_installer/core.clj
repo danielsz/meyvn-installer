@@ -7,12 +7,18 @@
   (:import [java.nio.file Paths LinkOption]
            [java.io FileNotFoundException]))
 
-(def version "1.8.8")
-(def release (str (System/getProperty "user.home") "/.m2/repository/org/meyvn/meyvn/" version "/meyvn-" version ".jar"))
+(def sep (System/getProperty "file.separator"))
 
+(def version "1.8.8")
+
+(def release (str (System/getProperty "user.home") sep ".m2" sep "repository" sep "org" sep "meyvn" sep "meyvn" sep version sep "meyvn-" version ".jar"))
+
+(defn os-windows? []
+  (str/starts-with? (str/lower-case (System/getProperty "os.name")) "windows"))
 
 (defn maven-path []
-  (let [pb (ProcessBuilder. ["which" "mvn"])
+  (let [cmd (if (os-windows?) ["where" "mvn"] ["which" "mvn"])
+        pb (ProcessBuilder. cmd)
         process (.start pb)
         rc (.waitFor process)]
     (if (= rc 0)
@@ -27,10 +33,16 @@
   (-> (maven-path) .getParent .getParent))
 
 (defn bin-path []
-  (let [path (-> (System/getenv "PATH")
-                (str/split #":"))
+  (let [path-sep (System/getProperty "path.separator") ; ":" or ";"
+        path (-> (System/getenv "PATH") (str/split (re-pattern path-sep)))
         homedir (System/getProperty "user.home")
-        candidates #{(str homedir "/.local/bin") "/usr/local/bin" (str homedir "/bin")}
+        candidates (if (os-windows?)
+                     #{(str homedir sep "AppData" sep "Local" sep "Microsoft" sep "WindowsApps")
+                       (str homedir sep "scoop" sep "shims")
+                       (str homedir sep ".local" sep "bin")}
+                     #{(str homedir sep ".local" sep "bin")
+                       "/usr/local/bin"
+                       (str homedir sep "bin")})
         exists #(.isDirectory (io/file %))
         selected (first (filter (every-pred candidates exists) path))]
     (println "Installation directory:" selected)
@@ -42,6 +54,7 @@
     (if (zero? rc)
       (println "Finished downloading")
       (exit "There was a problem downloading meyvn." :status 1))))
+
 
 (def cli-options
  [["-u" "--username USERNAME" "The username that came with your license."]
@@ -61,25 +74,34 @@
        (str/join "\n")))
 
 (defn sudo-write [path]
-  (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp -p " (System/getProperty "java.io.tmpdir") "/myvn " path " 2>&1")]
-        pb (ProcessBuilder. cmd)
-        process (.start pb)
-        buffer (char-array 512)
-        prompt-password (fn [s] (.readPassword (System/console) "%s" (into-array Object [s])))]
-    (with-open [out (clojure.java.io/reader (.getInputStream process))
-                in (clojure.java.io/writer (.getOutputStream process))]
-      (let [size (.read out buffer 0 512)]
-        (when (clojure.string/includes? (clojure.string/join buffer) "[sudo] password")
-          (when-let [password (prompt-password (String/valueOf buffer 0 size))]
-            (.write in password 0 (count password))
-            (.newLine in)
-            (.flush in)))))))
+  (if (os-windows?)
+    (exit "Insufficient permissions. Please re-run as Administrator." :status 1)
+    (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp -p " (System/getProperty "java.io.tmpdir") sep "myvn " path " 2>&1")]
+          pb (ProcessBuilder. cmd)
+          process (.start pb)
+          buffer (char-array 512)
+          prompt-password (fn [s] (.readPassword (System/console) "%s" (into-array Object [s])))]
+      (with-open [out (clojure.java.io/reader (.getInputStream process))
+                  in (clojure.java.io/writer (.getOutputStream process))]
+        (let [size (.read out buffer 0 512)]
+          (when (clojure.string/includes? (clojure.string/join buffer) "[sudo] password")
+            (when-let [password (prompt-password (String/valueOf buffer 0 size))]
+              (.write in password 0 (count password))
+              (.newLine in)
+              (.flush in))))))))
+
+(defn launcher-content [home]
+  (if (os-windows?)
+    (str "@echo off\r\njava -Dmaven.home=" home " -jar " release " %*\r\n")
+    (str "java -Dmaven.home=" home " -jar " release " $@\n")))
+
+(defn launcher-filename []
+  (if (os-windows?) "myvn.cmd" "myvn"))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options :in-order true)
         home (maven-home)
-        sh (io/file (str (bin-path) "/myvn"))
-        launcher (str "java -Dmaven.home=" home " -jar " release " $@")]
+        sh (io/file (str (bin-path) (System/getProperty "file.separator") (launcher-filename)))]
     (when (:help options) (exit (usage summary)))
     (when (pos? (:verbose options)) (println "options: " options "\narguments: " arguments "\nerrors: " errors))
     (if (find-file release)
@@ -88,10 +110,10 @@
     (println "can write?" (.canWrite (.getParentFile sh)))
     (if (.canWrite (.getParentFile sh))
       (do
-        (spit sh launcher)
-        (.setExecutable sh true))
-      (let [sh (io/file (str (System/getProperty "java.io.tmpdir") "/myvn"))]
-        (spit sh launcher)
+        (spit sh (launcher-content home))
+        (when-not (os-windows?) (.setExecutable sh true)))
+      (let [sh (io/file (str (System/getProperty "java.io.tmpdir") sep (launcher-filename)))]
+        (spit sh (launcher-content home))
         (.setExecutable sh true)
         (sudo-write (bin-path))))
     (println (str "`myvn' has been successfully installed in " (bin-path) "." ))))
