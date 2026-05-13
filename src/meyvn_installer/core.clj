@@ -50,8 +50,11 @@
     (println "Installation directory:" selected)
     selected))
 
+(defn mvn-executable []
+  (if (os-windows?) ["cmd" "/c" "mvn"] ["mvn"]))
+
 (defn download []
-  (let [pb (ProcessBuilder. ["mvn" "org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get" (str "-Dartifact=org.meyvn:meyvn:" version)])
+  (let [pb (ProcessBuilder. (into (mvn-executable) ["org.apache.maven.plugins:maven-dependency-plugin:3.10.0:get" (str "-Dartifact=org.meyvn:meyvn:" version)]))
         rc (.waitFor (-> pb .inheritIO .start))]
     (if (zero? rc)
       (println "Finished downloading")
