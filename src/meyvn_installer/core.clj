@@ -9,7 +9,7 @@
 
 (def sep (System/getProperty "file.separator"))
 
-(def version "1.8.9")
+(def version "1.9.0")
 
 (def release (str (System/getProperty "user.home") sep ".m2" sep "repository" sep "org" sep "meyvn" sep "meyvn" sep version sep "meyvn-" version ".jar"))
 
