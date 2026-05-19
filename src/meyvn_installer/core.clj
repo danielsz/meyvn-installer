@@ -4,12 +4,11 @@
             [meyvn-installer.utils :as utils :refer [exit find-file]]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]])
-  (:import [java.nio.file Paths LinkOption]
-           [java.io FileNotFoundException]))
+  (:import [java.nio.file Paths LinkOption]))
 
 (def sep (System/getProperty "file.separator"))
 
-(def version "1.9.0")
+(def version "1.9.4")
 
 (def release (str (System/getProperty "user.home") sep ".m2" sep "repository" sep "org" sep "meyvn" sep "meyvn" sep version sep "meyvn-" version ".jar"))
 
