@@ -1,6 +1,6 @@
 (ns meyvn-installer.core
   (:gen-class)
-  (:require [clojure.string :as str :refer [trim-newline]]
+  (:require [clojure.string :as str]
             [meyvn-installer.utils :as utils :refer [exit find-file]]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]])
@@ -15,35 +15,40 @@
 (defn os-windows? []
   (str/starts-with? (str/lower-case (System/getProperty "os.name")) "windows"))
 
+(defn termux? []
+  (some? (System/getenv "TERMUX_VERSION")))
+
 (defn maven-path []
   (let [cmd (if (os-windows?) ["where" "mvn"] ["which" "mvn"])
         pb (ProcessBuilder. cmd)
         process (.start pb)
         rc (.waitFor process)]
     (if (= rc 0)
-       (let [path (-> (.getInputStream process)
+      (let [path (-> (.getInputStream process)
                      slurp
-                     str/split-lines  ; split on newlines
-                     first            ; take only the first match
-                     str/trim         ; clean any whitespace/CR
+                     str/split-lines ; split on newlines
+                     first ; take only the first match
+                     str/trim ; clean any whitespace/CR
                      (Paths/get (into-array String [])))]
-         (.toRealPath path (into-array LinkOption [])))
+        (.toRealPath path (into-array LinkOption [])))
       (exit "Maven executable not found. Please install Maven prior to Meyvn." :status 1))))
 
 (defn maven-home []
   (-> (maven-path) .getParent .getParent))
 
 (defn bin-path []
-  (let [path-sep (System/getProperty "path.separator") ; ":" or ";"
+  (let [path-sep (System/getProperty "path.separator")
         path (-> (System/getenv "PATH") (str/split (re-pattern path-sep)))
         homedir (System/getProperty "user.home")
-        candidates (if (os-windows?)
-                     #{(str homedir sep "AppData" sep "Local" sep "Microsoft" sep "WindowsApps")
-                       (str homedir sep "scoop" sep "shims")
-                       (str homedir sep ".local" sep "bin")}
-                     #{(str homedir sep ".local" sep "bin")
-                       "/usr/local/bin"
-                       (str homedir sep "bin")})
+        candidates (cond
+                     (termux?) (let [prefix (System/getenv "PREFIX")]
+                                 #{(str prefix sep "bin")})
+                     (os-windows?) #{(str homedir sep "AppData" sep "Local" sep "Microsoft" sep "WindowsApps")
+                                     (str homedir sep "scoop" sep "shims")
+                                     (str homedir sep ".local" sep "bin")}
+                     :else #{(str homedir sep ".local" sep "bin")
+                             "/usr/local/bin"
+                             (str homedir sep "bin")})
         exists #(.isDirectory (io/file %))
         selected (first (filter (every-pred candidates exists) path))]
     (println "Installation directory:" selected)
@@ -59,13 +64,11 @@
       (println "Finished downloading")
       (exit "There was a problem downloading meyvn." :status 1))))
 
-
 (def cli-options
- [["-u" "--username USERNAME" "The username that came with your license."]
-  ["-p" "--password PASSWORD" "The password that came wiht your license."]
-  ["-v" nil "Verbosity level, use as a flag (no arguments)" :id :verbose :default 0 :update-fn inc]
-  ["-h" "--help" "This help screen."]])
-
+  [["-u" "--username USERNAME" "The username that came with your license."]
+   ["-p" "--password PASSWORD" "The password that came wiht your license."]
+   ["-v" nil "Verbosity level, use as a flag (no arguments)" :id :verbose :default 0 :update-fn inc]
+   ["-h" "--help" "This help screen."]])
 
 (defn usage [summary]
   (->> ["This is the Meyvn installer."
@@ -78,8 +81,10 @@
        (str/join "\n")))
 
 (defn sudo-write [path]
-  (if (os-windows?)
-    (exit "Insufficient permissions. Please re-run as Administrator." :status 1)
+  (cond
+    (os-windows?) (exit "Insufficient permissions. Please re-run as Administrator." :status 1)
+    (termux?) (exit "Insufficient permissions. Cannot elevate privileges in Termux. Install to a writable directory." :status 1)
+    :else
     (let [cmd ["/bin/bash" "-c" (str "/usr/bin/sudo -S /usr/bin/cp -p " (System/getProperty "java.io.tmpdir") sep "myvn " path " 2>&1")]
           pb (ProcessBuilder. cmd)
           process (.start pb)
@@ -120,4 +125,4 @@
         (spit sh (launcher-content home))
         (.setExecutable sh true)
         (sudo-write (bin-path))))
-    (println (str "`myvn' has been successfully installed in " (bin-path) "." ))))
+    (println (str "`myvn' has been successfully installed in " (bin-path) "."))))
